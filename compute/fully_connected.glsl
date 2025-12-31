@@ -33,10 +33,6 @@ float weight(uint i, uint j) {
     return bw[(1 + i) * y.length() + j];
 }
 
-float sigmoid(float z) {
-    return 1.0 / (1.0 + exp(-z));
-}
-
 void main() {
     const uint j = gl_GlobalInvocationID.x;
 
@@ -44,11 +40,9 @@ void main() {
         return;
     }
 
-    // z = X * W + b
-    float z = bias(j); // + b
+    // y = X * W + b
+    y[j] = bias(j); // + b
     for (uint i = 0; i < x.length(); ++i) {
-        z += x[i] * weight(i, j); // + X * W
+        y[j] += x[i] * weight(i, j); // + X * W
     }
-
-    y[j] = max(0, z);
 }
