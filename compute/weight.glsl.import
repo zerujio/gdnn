@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bu5ojukhecge7"
+path="res://.godot/imported/weight.glsl-1a611aaaf862a9cd76eeae9ea711ca9d.res"
+
+[deps]
+
+source_file="res://compute/weight.glsl"
+dest_files=["res://.godot/imported/weight.glsl-1a611aaaf862a9cd76eeae9ea711ca9d.res"]
+
+[params]
+

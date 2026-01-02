@@ -1,9 +1,9 @@
 #[compute]
 #version 450
 
-layout(local_size_x = 32) in;
+layout(local_size_x = 64) in;
 
-layout(set = 0, binding = 0) restrict
+layout(std430, set = 0, binding = 0) restrict
 buffer Buffer {
     float x[];
 };
