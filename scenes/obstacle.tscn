@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://fe2fqocbg7t5"]
+
+[ext_resource type="Texture2D" uid="uid://dpmq2043e3gu8" path="res://sprites/roguelikeSheet_transparent.png" id="1_sl1jc"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_272bh"]
+radius = 8.0
+
+[node name="Obstacle" type="StaticBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_272bh")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_sl1jc")
+region_enabled = true
+region_rect = Rect2(391, 0, 16, 17)

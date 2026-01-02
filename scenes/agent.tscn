@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3 uid="uid://bo4k7g1wbe8jd"]
+
+[ext_resource type="Script" uid="uid://byqymkpfolt4w" path="res://scenes/agent.gd" id="1_yc63n"]
+[ext_resource type="Texture2D" uid="uid://cmdwm8nr73rhd" path="res://sprites/roguelikeChar_transparent.png" id="2_lug0u"]
+[ext_resource type="Script" uid="uid://clalf6stkkngd" path="res://nn/instance.gd" id="3_dg1j7"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0xm2m"]
+
+[node name="CharacterBody2D" type="CharacterBody2D"]
+motion_mode = 1
+script = ExtResource("1_yc63n")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_0xm2m")
+
+[node name="RayCast2D" type="RayCast2D" parent="."]
+target_position = Vector2(0, 150)
+
+[node name="RayCast2D2" type="RayCast2D" parent="."]
+rotation = 1.0471976
+target_position = Vector2(0, 150)
+
+[node name="RayCast2D3" type="RayCast2D" parent="."]
+rotation = 2.0943952
+target_position = Vector2(0, 150)
+
+[node name="RayCast2D4" type="RayCast2D" parent="."]
+rotation = 3.1415927
+target_position = Vector2(0, 150)
+
+[node name="RayCast2D5" type="RayCast2D" parent="."]
+rotation = 4.1887903
+target_position = Vector2(0, 150)
+
+[node name="RayCast2D6" type="RayCast2D" parent="."]
+rotation = 5.2359877
+target_position = Vector2(0, 150)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_lug0u")
+region_enabled = true
+region_rect = Rect2(16, 102, 17, 16)
+
+[node name="NNInstance" type="Node" parent="."]
+script = ExtResource("3_dg1j7")
+metadata/_custom_type_script = "uid://clalf6stkkngd"

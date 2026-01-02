@@ -11,6 +11,15 @@ config_version=5
 [application]
 
 config/name="Godot Machine Learning"
-run/main_scene="uid://dpp7twwn18v8c"
+run/main_scene="uid://c5r0ahhe11w48"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[display]
+
+window/stretch/scale=2.0
+window/stretch/scale_mode="integer"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0

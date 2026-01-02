@@ -1,18 +1,19 @@
-extends Node
+class_name NNContext
 
-const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://compute/weight.glsl")
-const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://compute/activation.glsl")
+const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://nn/weight.glsl")
+const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://nn/activation.glsl")
 const INPUT_EXP_MAX := 6
 const FLOAT_SIZE := 4
 const GROUP_SIZE := 2 ** INPUT_EXP_MAX
 
-## Input size exponent. 
-@export_range(1, INPUT_EXP_MAX) var input_exp := 3
-@export_range(1, INPUT_EXP_MAX) var output_exp := 2
-## Number of instances stored/active.
-@export_range(0, 1024) var instance_count := 0:
-	set = set_count
+enum Activation { NONE, SIGMOID, RELU }
 
+## Input size exponent. 
+var input_exp := 1
+var output_exp := 1
+## Number of instances stored/active.
+var instance_count := 0:
+	set = set_count
 ## Number of instances allocated.
 var instance_capacity := 0:
 	set = set_capacity
@@ -20,6 +21,8 @@ var input_count: int:
 	get: return 2 ** input_exp
 var output_count: int:
 	get: return 2 ** output_exp
+## Activation function
+var activation := Activation.NONE
 
 var rd := RenderingServer.create_local_rendering_device()
 
@@ -29,8 +32,7 @@ var _weight_pipeline: RID = rd.compute_pipeline_create(_weight_shader)
 
 ## Applies activation functions.
 var _activation_shader: RID = rd.shader_create_from_spirv(ACTIVATION_SHADER_FILE.get_spirv(), "activation")
-var _sigmoid_pipeline: RID
-var _relu_pipeline: RID
+var _activation_pipeline: Array[RID]
 
 var _input_buf: RID
 var _input_set: RID
@@ -45,15 +47,11 @@ var _bias_buf: RID
 
 func _init() -> void:
 	# activation functions
+	_activation_pipeline.resize(Activation.size())
 	var spec_const := RDPipelineSpecializationConstant.new()
-	
-	# sigmoid
-	spec_const.value = 0
-	_sigmoid_pipeline = rd.compute_pipeline_create(_activation_shader, [spec_const])
-	
-	# relu
-	spec_const.value = 1
-	_relu_pipeline = rd.compute_pipeline_create(_activation_shader, [spec_const])
+	for i in range(Activation.size() - 1):
+		spec_const.value = i
+		_activation_pipeline[i + 1] = rd.compute_pipeline_create(_activation_shader, [spec_const])
 
 
 func set_count(count: int) -> void:
@@ -97,7 +95,7 @@ func set_capacity(capacity: int) -> void:
 			[_storage_buffer_uniform(_weight_buf, 0)], 
 			_weight_shader, 
 			0)
-	
+		
 		assert(not rd.uniform_set_is_valid(_input_set))
 		_input_set = rd.uniform_set_create(
 			[_storage_buffer_uniform(_input_buf, 0)], 
@@ -113,14 +111,16 @@ func set_capacity(capacity: int) -> void:
 	instance_capacity = capacity
 
 
-func add_instances(count: int, weight_data: PackedByteArray, bias_data: PackedByteArray) -> void:
+func add_instances(count: int, weight_data := PackedByteArray(), bias_data := PackedByteArray()) -> void:
 	assert(count > 0)
 	
 	var old_count := instance_count
 	instance_count += count
 	
-	update_weight(old_count, count, weight_data)
-	update_bias(old_count, count, bias_data)
+	if not weight_data.is_empty():
+		update_weight(old_count, count, weight_data)
+	if not bias_data.is_empty():
+		update_bias(old_count, count, bias_data)
 
 
 func update_weight(index: int, count: int, data: PackedByteArray) -> void:
@@ -170,10 +170,12 @@ func submit_input(input_data := PackedByteArray()) -> void:
 	rd.compute_list_add_barrier(cl)
 	
 	# apply activation function
-	rd.compute_list_bind_compute_pipeline(cl, _relu_pipeline)
-	rd.compute_list_bind_uniform_set(cl, _output_set, 0)
-	@warning_ignore("integer_division")
-	rd.compute_list_dispatch(cl, 1 + instance_count * output_count / GROUP_SIZE, 1, 1)
+	var _pipeline := _activation_pipeline[activation]
+	if _pipeline:
+		rd.compute_list_bind_compute_pipeline(cl, _pipeline)
+		rd.compute_list_bind_uniform_set(cl, _output_set, 0)
+		@warning_ignore("integer_division")
+		rd.compute_list_dispatch(cl, 1 + instance_count * output_count / GROUP_SIZE, 1, 1)
 	
 	rd.compute_list_end()
 	rd.submit()
