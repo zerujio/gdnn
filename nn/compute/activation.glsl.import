@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://kcm55gtr6iy"
+path="res://.godot/imported/activation.glsl-e10d8a728521d449f66a86133031a599.res"
+
+[deps]
+
+source_file="res://nn/compute/activation.glsl"
+dest_files=["res://.godot/imported/activation.glsl-e10d8a728521d449f66a86133031a599.res"]
+
+[params]
+

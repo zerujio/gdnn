@@ -1,7 +1,7 @@
 class_name NNContext
 
-const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://nn/weight.glsl")
-const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://nn/activation.glsl")
+const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://nn/compute/weight.glsl")
+const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://nn/compute/activation.glsl")
 const INPUT_EXP_MAX := 6
 const FLOAT_SIZE := 4
 const GROUP_SIZE := 2 ** INPUT_EXP_MAX
