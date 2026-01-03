@@ -93,18 +93,22 @@ func set_instance_input(instance_idx: int, data: PackedFloat32Array) -> void:
 
 
 ## Read an instance's output.
-func get_instance_output(instance_idx: int) -> PackedFloat32Array:
-	assert(is_idx_valid(instance_idx))
-	var size := get_output_count() * _instance_count * 4
-	return _out.data.slice(instance_idx * size, (instance_idx + 1) * size).to_float32_array()
+func get_instance_output(idx: int, count := 1) -> PackedFloat32Array:
+	assert(is_idx_valid(idx))
+	assert(idx + count <= _instance_count)
+	var stride := get_output_count() * 4
+	var begin := idx * stride
+	return _out.data.slice(begin, begin + stride * count).to_float32_array()
 
 
-## Updates an instance's weights and biases.
-func set_instance_params(instance_idx: int, params: PackedFloat32Array) -> void:
-	assert(is_idx_valid(instance_idx))
-	var w_count := get_weight_count()
-	context.update_weight(instance_idx, 1, params.slice(0, w_count).to_byte_array())
-	context.update_bias(instance_idx, 1, params.slice(w_count).to_byte_array())
+## Updates one or more instance's weights and biases.
+func set_instance_params(idx: int, count: int, data: PackedFloat32Array) -> void:
+	assert(is_idx_valid(idx))
+	assert(idx + count <= _instance_count)
+	assert(data.size() == (get_weight_count() + get_output_count()) * count)
+	var split_idx := count * get_weight_count()
+	context.update_weight(idx, count, data.slice(0, split_idx).to_byte_array())
+	context.update_bias(idx, count, data.slice(split_idx).to_byte_array())
 
 
 func is_idx_valid(idx: int) -> bool:

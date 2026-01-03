@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://c5r0ahhe11w48"]
 
 [ext_resource type="Script" uid="uid://bn4ee5pq05xu6" path="res://nn/processor.gd" id="1_ig7tw"]
-[ext_resource type="PackedScene" uid="uid://bo4k7g1wbe8jd" path="res://scenes/agent.tscn" id="2_sugp2"]
+[ext_resource type="Script" uid="uid://dcevwtgf3mdc5" path="res://scenes/main.gd" id="1_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://fe2fqocbg7t5" path="res://scenes/obstacle.tscn" id="5_lquwl"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
@@ -16,6 +16,8 @@ normal = Vector2(1, 0)
 normal = Vector2(-1, 0)
 
 [node name="Main" type="Node2D"]
+script = ExtResource("1_jyhfs")
+agent_count = 64
 
 [node name="NNProcessor" type="Node" parent="."]
 process_physics_priority = 1
@@ -24,9 +26,8 @@ input_exp = 3
 output_exp = 1
 metadata/_custom_type_script = "uid://bn4ee5pq05xu6"
 
-[node name="CharacterBody2D" parent="." node_paths=PackedStringArray("nn_processor") instance=ExtResource("2_sugp2")]
-position = Vector2(145, 91)
-nn_processor = NodePath("../NNProcessor")
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(263, 171)
 
 [node name="Obstacle" parent="." instance=ExtResource("5_lquwl")]
 position = Vector2(25, 27)

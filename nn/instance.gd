@@ -18,16 +18,18 @@ func _exit_tree() -> void:
 
 
 func set_processor(p: NNProcessor) -> void:
-	if processor and instance_idx > -1:
-		processor.remove_instance(instance_idx)
-		instance_idx = -1
+	if is_inside_tree():
+		if processor and instance_idx > -1:
+			processor.remove_instance(instance_idx)
+			instance_idx = -1
+		if p:
+			instance_idx = p.add_instance()
+	
 	processor = p
-	if processor:
-		instance_idx = processor.add_instance()
 
 
 func set_params(data: PackedFloat32Array) -> void:
-	processor.set_instance_params(instance_idx, data)
+	processor.set_instance_params(instance_idx, 1, data)
 
 
 func set_input(data: PackedFloat32Array) -> void:

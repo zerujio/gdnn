@@ -1,6 +1,5 @@
 extends CharacterBody2D
 
-@export var nn_processor: NNProcessor
 @export var speed := 64.0
 
 @onready var nn: NNInstance = $NNInstance
@@ -12,17 +11,6 @@ extends CharacterBody2D
 	$RayCast2D5,
 	$RayCast2D6
 ]
-
-
-func _ready() -> void:
-	nn.processor = nn_processor
-	
-	# random initial weights
-	var params: PackedFloat32Array
-	params.resize(nn_processor.get_weight_count() + nn_processor.get_output_count())
-	for i in range(params.size()):
-		params[i] = randf_range(-1.0, 1.0)
-	nn.set_params(params)
 
 
 func _physics_process(_delta: float) -> void:

@@ -6,7 +6,8 @@
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_0xm2m"]
 
-[node name="CharacterBody2D" type="CharacterBody2D"]
+[node name="Agent" type="CharacterBody2D"]
+collision_layer = 2
 motion_mode = 1
 script = ExtResource("1_yc63n")
 
@@ -14,27 +15,21 @@ script = ExtResource("1_yc63n")
 shape = SubResource("CircleShape2D_0xm2m")
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
-target_position = Vector2(0, 150)
 
 [node name="RayCast2D2" type="RayCast2D" parent="."]
 rotation = 1.0471976
-target_position = Vector2(0, 150)
 
 [node name="RayCast2D3" type="RayCast2D" parent="."]
 rotation = 2.0943952
-target_position = Vector2(0, 150)
 
 [node name="RayCast2D4" type="RayCast2D" parent="."]
 rotation = 3.1415927
-target_position = Vector2(0, 150)
 
 [node name="RayCast2D5" type="RayCast2D" parent="."]
 rotation = 4.1887903
-target_position = Vector2(0, 150)
 
 [node name="RayCast2D6" type="RayCast2D" parent="."]
 rotation = 5.2359877
-target_position = Vector2(0, 150)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_lug0u")
