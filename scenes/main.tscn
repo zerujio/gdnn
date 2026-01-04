@@ -1,9 +1,14 @@
-[gd_scene load_steps=9 format=3 uid="uid://c5r0ahhe11w48"]
+[gd_scene load_steps=11 format=3 uid="uid://c5r0ahhe11w48"]
 
 [ext_resource type="Script" uid="uid://dcevwtgf3mdc5" path="res://scenes/main.gd" id="1_jyhfs"]
 [ext_resource type="Script" uid="uid://jboeky2h8hew" path="res://nn/context.gd" id="2_jyhfs"]
 [ext_resource type="Script" uid="uid://clalf6stkkngd" path="res://nn/multi_instance.gd" id="4_jyhfs"]
+[ext_resource type="Script" uid="uid://dll6ccxaqijsg" path="res://nn/layout.gd" id="4_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://fe2fqocbg7t5" path="res://scenes/obstacle.tscn" id="5_lquwl"]
+
+[sub_resource type="Resource" id="Resource_tefeu"]
+script = ExtResource("4_tbgi4")
+metadata/_custom_type_script = "uid://dll6ccxaqijsg"
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
 normal = Vector2(0, 1)
@@ -26,7 +31,7 @@ metadata/_custom_type_script = "uid://jboeky2h8hew"
 
 [node name="NNMultiInstance" type="Node" parent="NNContext"]
 script = ExtResource("4_jyhfs")
-_context = NodePath("../..")
+layout = SubResource("Resource_tefeu")
 metadata/_custom_type_script = "uid://clalf6stkkngd"
 
 [node name="SpawnPoint" type="Marker2D" parent="."]

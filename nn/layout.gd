@@ -5,50 +5,69 @@ extends Resource
 ## [b]Note[/b]: [signal changed] is NOT emitted automatically when properties changed. After a 
 ## change, call [method emit_changed] to update any dependent [class NNMultiInstance] nodes.
 
-## Layer types.
-enum Layer { FULLY_CONNECTED }
-
 ## Activation function types.
 enum Activation { NONE, SIGMOID, RELU }
 
-## Size of the input layer.
-@export_range(1, 64, 1, "exp") var input_size: int
+## Base 2 logarithm of the input size. This is ensures that the input size is
+## always a power of 2.
+@export_range(0, NNContext.INPUT_EXP_MAX) var input_log2: int = 0
 
-## Stores the layer definitions. Each layer takes up 3 bytes, with the following meaning:
-## 0: [enum Layer] type
-## 1: [enum Activation] function
-## 2: output size
+## Stores the layer definitions. Each layer takes up 2 bytes, the first of which
+## is the [enum Activation] function, and the second is the log2 of the output size.
 @export var layer_data: PackedByteArray
+
+
+func add_layer(activation: Activation, output_size_log2: int) -> void:
+	assert(output_size_log2 >= 0 and output_size_log2 < NNContext.INPUT_EXP_MAX)
+	layer_data.append(activation)
+	layer_data.append(output_size_log2)
+
+
+func remove_layer(idx: int) -> void:
+	assert(idx < get_layer_count())
+	assert(idx >= -get_layer_count())
+	layer_data.remove_at(2 * idx + 1)
+	layer_data.remove_at(2 * idx)
 
 
 ## Number of layers.
 func get_layer_count() -> int:
 	assert(layer_data.size() % 3 == 0)
 	@warning_ignore("integer_division")
-	return layer_data.size() / 3
+	return layer_data.size() / 2
+
+
+## Number of inputs of the first layer.
+func get_input_size() -> int:
+	return 2 ** input_log2
 
 
 ## Number of outputs of the last layer.
 func get_output_size() -> int:
-	return layer_data[-1] if not layer_data.is_empty() else input_size
+	return 2 ** get_output_size_log2()
 
 
-func get_layer_type(idx: int) -> Layer:
-	return layer_data[idx * 3] as Layer
+## Base 2 logarithm of the number of outputs of the last layer.
+func get_output_size_log2() -> int:
+	return layer_data[-1] if not layer_data.is_empty() else get_input_size()
 
 
 func get_layer_activation(idx: int) -> Activation:
-	return layer_data[idx * 3 + 1] as Activation
+	return layer_data[idx * 2] as Activation
+
+
+func get_layer_output_log2(idx: int) -> int:
+	var log2 := layer_data[idx * 2 + 1]
+	assert(log2 > 0, "layer with output log2 = %d < 1" % log2)
+	return log2
 
 
 func get_layer_output_size(idx: int) -> int:
-	var size := layer_data[idx * 3 + 2]
-	assert(size > 0, "layer with output size = %d < 1" % size)
-	return size
+	return 2 ** get_layer_output_log2(idx)
 
 
 func get_layer_input_size(idx: int) -> int:
-	return get_layer_output_size(idx - 1) if idx > 0 else input_size
+	return get_layer_output_size(idx - 1) if idx > 0 else get_input_size()
 
 
 ## Returns Vector2i containing the input and output size of a layer.

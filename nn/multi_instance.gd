@@ -30,13 +30,13 @@ enum LayerRID {
 	set = set_count
 
 ## Number of instances that would fit in the currently allocated memory.
-@export var capacity: int = 0:
+var capacity: int = 0:
 	set = set_capacity
 
 ## Input storage buffer.
 var _input_buf: RID
 
-## Input unifom set.
+## Input uniform set.
 var _input_set: RID
 
 ## RIDs of the bias buffer, weight buffer, weight uniform set, output buffer, 
@@ -44,12 +44,28 @@ var _input_set: RID
 ## e.g. : [b_buf_0, w_buf_0, w_set_0, out_buf_0, out_set_0, b_buf_1, w_buf_1, ..., out_set_n]
 var _layer_rids: Array[RID]
 
-## Neural network compute context. Warning: changing this discards all stored information.
+## Neural network compute context. Warning: changing this will discard all stored data.
 @onready var ctx: NNContext = get_node(_context):
 	set(c):
-		_free_rids()
+		if ctx:
+			_free_rids()
+			assert(ctx._instances.count(self) == 1)
+			ctx._instances.erase(self)
 		ctx = c
+		if ctx:
+			assert(not ctx._instances.has(self))
+			_reallocate_buffers()
+			ctx._instances.append(self)
+
+
+func _enter_tree() -> void:
+	if ctx:
 		_reallocate_buffers()
+
+
+func _exit_tree() -> void:
+	if ctx:
+		_free_rids()
 
 
 func set_count(new_count: int) -> void:
@@ -81,7 +97,7 @@ func set_capacity(new_cap: int) -> void:
 ## Updates the input data for one or more instances starting at [param instance_idx].
 ## Number of instances updated depends on size of [param data].
 func set_input(instance_idx: int, data: PackedByteArray) -> void:
-	_update_buffer(_input_buf, instance_idx, layout.input_size * 4, data)
+	_update_buffer(_input_buf, instance_idx, layout.get_input_size() * 4, data)
 
 
 ## Retrieves the output data of one or more instances.
@@ -110,6 +126,61 @@ func update_layer_bias(layer_idx: int, instance_idx: int, data: PackedByteArray)
 	_update_buffer(buf, instance_idx, layout.get_layer_output_size(layer_idx) * 4, data)
 
 
+func _dispatch_compute() -> void:
+	var layer_indices := range(layout.get_layer_count())
+	
+	# initialize output buffers to the bias values
+	var rd := ctx.rd
+	for i in layer_indices:
+		var bias := _layer_rid(i, LayerRID.BIAS_BUFFER)
+		var out := _layer_rid(i, LayerRID.OUT_BUFFER)
+		rd.buffer_copy(bias, out, 0, 0, layout.get_layer_output_size(i) * 4 * count)
+	
+	# dispatch compute shaders
+	var cl := rd.compute_list_begin()
+	var input_set := _input_set
+	var input_log2 := layout.input_log2
+	for i in layer_indices:
+		var output_set := _layer_rid(i, LayerRID.OUT_SET)
+		var output_log2 := layout.get_layer_output_log2(i)
+		var output_count := 2 ** output_log2
+		
+		var weight_set := _layer_rid(i, LayerRID.WEIGHT_SET)
+		var weight_count := 2 ** (input_log2 + output_log2)
+		
+		var pc: PackedByteArray
+		pc.resize(16)
+		pc.encode_u32(0, input_log2)
+		pc.encode_u32(4, output_log2)
+		
+		# apply weights
+		rd.compute_list_bind_compute_pipeline(cl, ctx._weight_pipeline)
+		rd.compute_list_set_push_constant(cl, pc, pc.size())
+		rd.compute_list_bind_uniform_set(cl, input_set, 0)
+		rd.compute_list_bind_uniform_set(cl, weight_set, 1)
+		rd.compute_list_bind_uniform_set(cl, output_set, 2)
+		assert((weight_count * capacity) % NNContext.GROUP_SIZE == 0)
+		var wg_count := ceili(float(count * weight_count) / NNContext.GROUP_SIZE)
+		rd.compute_list_dispatch(cl, wg_count, 1, 1)
+		
+		# apply activation function
+		var activation := ctx._activation_pipeline[layout.get_layer_activation(i)]
+		if activation:
+			rd.compute_list_add_barrier(cl)
+			rd.compute_list_bind_compute_pipeline(cl, activation)
+			rd.compute_list_bind_uniform_set(cl, output_set, 0)
+			assert((output_count * capacity) % NNContext.GROUP_SIZE == 0)
+			wg_count = ceili(float(count * output_count) / NNContext.GROUP_SIZE)
+			rd.compute_list_dispatch(cl, wg_count, 1, 1)
+		
+		# outputs of this layer are inputs of the next
+		rd.compute_list_add_barrier(cl)
+		input_set = output_set
+		input_log2 = output_log2
+	
+	rd.compute_list_end()
+
+
 func _layout_changed() -> void:
 	_free_rids()
 	_layer_rids.resize(layout.get_layer_count() * 5 if layout else 0)
@@ -123,9 +194,6 @@ func _layer_rid(layer_idx: int, type: LayerRID) -> RID:
 
 
 func _free_rids() -> void:
-	if not ctx:
-		return
-	
 	for rid in [_input_buf, _input_set] + _layer_rids:
 		ctx.rd.free_rid(rid)
 	_input_buf = RID()
@@ -134,14 +202,11 @@ func _free_rids() -> void:
 
 
 func _reallocate_buffers() -> void:
-	if not ctx:
-		return
-	
 	const FLOAT_SIZE := 4
-	_input_buf = _reallocate_buffer(_input_buf, FLOAT_SIZE * layout.input_size)
+	var input_size := layout.get_input_size()
+	_input_buf = _reallocate_buffer(_input_buf, FLOAT_SIZE * input_size)
 	_input_set = ctx.create_io_uniform_set(_input_buf)
 	
-	var input_size := layout.input_size
 	for i in range(layout.get_layer_count()):
 		var output_size := layout.get_output_size()
 		var j := 5 * i

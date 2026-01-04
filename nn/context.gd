@@ -5,23 +5,13 @@ extends Node
 const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://nn/compute/weight.glsl")
 const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://nn/compute/activation.glsl")
 const INPUT_EXP_MAX := 6
-const FLOAT_SIZE := 4
 const GROUP_SIZE := 2 ** INPUT_EXP_MAX
-
-enum Activation { NONE, SIGMOID, RELU }
-
-## Input size exponent. 
-var input_exp := 1
-var output_exp := 1
-var input_count: int:
-	get: return 2 ** input_exp
-var output_count: int:
-	get: return 2 ** output_exp
-## Activation function
-var activation := Activation.NONE
 
 ## Rendering device used for compute.
 var rd := RenderingServer.create_local_rendering_device()
+
+## Neural network instances managed by this context.
+var _instances: Array[NNMultiInstance]
 
 ## Multiplies input by layer weights.
 var _weight_shader: RID = rd.shader_create_from_spirv(WEIGHT_SHADER_FILE.get_spirv(), "weight")
@@ -31,99 +21,33 @@ var _weight_pipeline: RID = rd.compute_pipeline_create(_weight_shader)
 var _activation_shader: RID = rd.shader_create_from_spirv(ACTIVATION_SHADER_FILE.get_spirv(), "activation")
 var _activation_pipeline: Array[RID]
 
-var _input_buf: RID
-var _input_set: RID
-
-var _output_buf: RID
-var _output_set: RID
-
-var _weight_buf: RID
-var _weight_set: RID
-var _bias_buf: RID
-
 
 func _init() -> void:
 	# activation functions
-	_activation_pipeline.resize(Activation.size())
+	_activation_pipeline.resize(NNLayout.Activation.size())
 	var spec_const := RDPipelineSpecializationConstant.new()
-	for i in range(Activation.size() - 1):
-		spec_const.value = i
-		_activation_pipeline[i + 1] = rd.compute_pipeline_create(_activation_shader, [spec_const])
+	for i in range(1, NNLayout.Activation.size()):
+		spec_const.value = i - 1
+		_activation_pipeline[i] = rd.compute_pipeline_create(_activation_shader, [spec_const])
 
 
-func add_instances(count: int, weight_data := PackedByteArray(), bias_data := PackedByteArray()) -> void:
-	assert(count > 0)
-	
-	var old_count := instance_count
-	instance_count += count
-	
-	if not weight_data.is_empty():
-		update_weight(old_count, count, weight_data)
-	if not bias_data.is_empty():
-		update_bias(old_count, count, bias_data)
+## Get the list of instances associated with this context.
+func get_instances() -> Array[NNMultiInstance]:
+	return _instances.duplicate()
 
 
-func update_weight(index: int, count: int, data: PackedByteArray) -> void:
-	assert(index >= 0)
-	assert(count >= 0)
-	var stride := FLOAT_SIZE * input_count * output_count
-	assert(data.size() == count * stride)
-	rd.buffer_update(_weight_buf, index * stride, data.size(), data)
-
-
-func update_bias(index: int, count: int, data: PackedByteArray) -> void:
-	assert(index >= 0)
-	assert(count >= 0)
-	var stride := FLOAT_SIZE * output_count
-	assert(data.size() == count * stride)
-	rd.buffer_update(_bias_buf, index * stride, data.size(), data)
-
-
-func set_input(input_data: PackedByteArray) -> void:
-	assert(input_data.size() == FLOAT_SIZE * input_count * instance_count)
-	rd.buffer_update(_input_buf, 0, input_data.size(), input_data)
-
-
-func submit_input(input_data := PackedByteArray()) -> void:
-	if not input_data.is_empty():
-		set_input(input_data)
-	
-	# apply bias
-	rd.buffer_copy(_bias_buf, _output_buf, 0, 0, FLOAT_SIZE * output_count * instance_count)
-	
-	var cl := rd.compute_list_begin()
-	
-	# apply weights to inputs
-	var push_constant: PackedByteArray
-	push_constant.resize(16)
-	push_constant.encode_u32(0, input_exp)
-	push_constant.encode_u32(4, output_exp)
-	
-	rd.compute_list_bind_compute_pipeline(cl, _weight_pipeline)
-	rd.compute_list_set_push_constant(cl, push_constant, push_constant.size())
-	rd.compute_list_bind_uniform_set(cl, _weight_set, 0)
-	rd.compute_list_bind_uniform_set(cl, _input_set, 1)
-	rd.compute_list_bind_uniform_set(cl, _output_set, 2)
-	@warning_ignore("integer_division")
-	rd.compute_list_dispatch(cl, 1 + instance_count * input_count * output_count / GROUP_SIZE, 1, 1)
-	
-	rd.compute_list_add_barrier(cl)
-	
-	# apply activation function
-	var _pipeline := _activation_pipeline[activation]
-	if _pipeline:
-		rd.compute_list_bind_compute_pipeline(cl, _pipeline)
-		rd.compute_list_bind_uniform_set(cl, _output_set, 0)
-		@warning_ignore("integer_division")
-		rd.compute_list_dispatch(cl, 1 + instance_count * output_count / GROUP_SIZE, 1, 1)
-	
-	rd.compute_list_end()
+## Gathers input from all instances associated with this context and dispatches
+## the compute operations.
+func submit_input() -> void:
+	for instance in _instances:
+		instance._dispatch_compute()
 	rd.submit()
 
 
-func sync_output() -> PackedByteArray:
+## Waits until all previously dispatched compute operations are finished, making
+## its output available.
+func sync_output() -> void:
 	rd.sync()
-	return rd.buffer_get_data(_output_buf, 0, FLOAT_SIZE * output_count * instance_count)
 
 
 func create_weight_uniform_set(buffer: RID) -> RID:
@@ -132,21 +56,6 @@ func create_weight_uniform_set(buffer: RID) -> RID:
 
 func create_io_uniform_set(buffer: RID) -> RID: 
 	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 1)
-
-
-func _resize_storage_buffer(old_buffer: RID, old_size: int, new_size: int) -> RID:
-	var new_buffer: RID
-	
-	if new_size > 0:
-		new_buffer = rd.storage_buffer_create(new_size)
-	
-	if old_buffer:
-		assert(old_size > 0)
-		if new_buffer:
-			rd.buffer_copy(old_buffer, new_buffer, 0, 0, old_size)
-		rd.free_rid(old_buffer)
-	
-	return new_buffer
 
 
 func _storage_buffer_uniform(buffer: RID, binding: int) -> RDUniform:
