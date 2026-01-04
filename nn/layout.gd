@@ -1,6 +1,9 @@
 class_name NNLayout
 extends Resource
 ## Specifies the number, size and type of layers in a neural network.
+## 
+## [b]Note[/b]: [signal changed] is NOT emitted automatically when properties changed. After a 
+## change, call [method emit_changed] to update any dependent [class NNMultiInstance] nodes.
 
 ## Layer types.
 enum Layer { FULLY_CONNECTED }
@@ -46,3 +49,8 @@ func get_layer_output_size(idx: int) -> int:
 
 func get_layer_input_size(idx: int) -> int:
 	return get_layer_output_size(idx - 1) if idx > 0 else input_size
+
+
+## Returns Vector2i containing the input and output size of a layer.
+func get_layer_size(idx: int) -> Vector2i:
+	return Vector2i(get_layer_input_size(idx), get_layer_output_size(idx))

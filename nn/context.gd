@@ -1,4 +1,6 @@
 class_name NNContext
+extends Node
+## GPU context for neural network inference.
 
 const WEIGHT_SHADER_FILE: RDShaderFile = preload("res://nn/compute/weight.glsl")
 const ACTIVATION_SHADER_FILE: RDShaderFile = preload("res://nn/compute/activation.glsl")
@@ -11,12 +13,6 @@ enum Activation { NONE, SIGMOID, RELU }
 ## Input size exponent. 
 var input_exp := 1
 var output_exp := 1
-## Number of instances stored/active.
-var instance_count := 0:
-	set = set_count
-## Number of instances allocated.
-var instance_capacity := 0:
-	set = set_capacity
 var input_count: int:
 	get: return 2 ** input_exp
 var output_count: int:
@@ -24,6 +20,7 @@ var output_count: int:
 ## Activation function
 var activation := Activation.NONE
 
+## Rendering device used for compute.
 var rd := RenderingServer.create_local_rendering_device()
 
 ## Multiplies input by layer weights.
@@ -52,63 +49,6 @@ func _init() -> void:
 	for i in range(Activation.size() - 1):
 		spec_const.value = i
 		_activation_pipeline[i + 1] = rd.compute_pipeline_create(_activation_shader, [spec_const])
-
-
-func set_count(count: int) -> void:
-	assert(count >= 0)
-	
-	if count > instance_capacity:
-		var new_cap := 1
-		while new_cap < count:
-			new_cap *= 2
-		instance_capacity = new_cap
-	
-	instance_count = count
-
-
-func set_capacity(capacity: int) -> void:
-	assert(capacity >= 0)
-	
-	var weight_stride := FLOAT_SIZE * input_count * output_count
-	_weight_buf = _resize_storage_buffer(_weight_buf, 
-		weight_stride * instance_capacity, 
-		weight_stride * capacity)
-	
-	var bias_stride := FLOAT_SIZE * output_count
-	_bias_buf = _resize_storage_buffer(_bias_buf, 
-		bias_stride * instance_capacity, 
-		bias_stride * capacity)
-	
-	var input_stride := FLOAT_SIZE * input_count
-	_input_buf = _resize_storage_buffer(_input_buf, 
-		input_stride * instance_capacity, 
-		input_stride * capacity)
-	
-	var output_stride := FLOAT_SIZE * output_count
-	_output_buf = _resize_storage_buffer(_output_buf,
-		output_stride * instance_capacity,
-		output_stride * capacity)
-	
-	if capacity > 0:
-		assert(not rd.uniform_set_is_valid(_weight_set))
-		_weight_set = rd.uniform_set_create(
-			[_storage_buffer_uniform(_weight_buf, 0)], 
-			_weight_shader, 
-			0)
-		
-		assert(not rd.uniform_set_is_valid(_input_set))
-		_input_set = rd.uniform_set_create(
-			[_storage_buffer_uniform(_input_buf, 0)], 
-			_weight_shader, 
-			1)
-		
-		assert(not rd.uniform_set_is_valid(_output_set))
-		_output_set = rd.uniform_set_create(
-			[_storage_buffer_uniform(_output_buf, 0)],
-			_weight_shader,
-			2)
-	
-	instance_capacity = capacity
 
 
 func add_instances(count: int, weight_data := PackedByteArray(), bias_data := PackedByteArray()) -> void:
@@ -184,6 +124,14 @@ func submit_input(input_data := PackedByteArray()) -> void:
 func sync_output() -> PackedByteArray:
 	rd.sync()
 	return rd.buffer_get_data(_output_buf, 0, FLOAT_SIZE * output_count * instance_count)
+
+
+func create_weight_uniform_set(buffer: RID) -> RID:
+	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 0)
+
+
+func create_io_uniform_set(buffer: RID) -> RID: 
+	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 1)
 
 
 func _resize_storage_buffer(old_buffer: RID, old_size: int, new_size: int) -> RID:
