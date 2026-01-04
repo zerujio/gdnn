@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://daggtpvvcaacu"
+path="res://.godot/imported/crossover.glsl-412f381050bf488e8e362948c9462a18.res"
+
+[deps]
+
+source_file="res://nn/compute/crossover.glsl"
+dest_files=["res://.godot/imported/crossover.glsl-412f381050bf488e8e362948c9462a18.res"]
+
+[params]
+
