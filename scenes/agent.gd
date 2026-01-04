@@ -1,8 +1,11 @@
 extends CharacterBody2D
 
-@export var speed := 64.0
+@export var speed := 32.0
+@export var nn: NNMultiInstance
+@export var nn_index: int
 
-@onready var nn: NNInstance = $NNInstance
+var _nn_input: PackedFloat32Array
+
 @onready var raycasts: Array[RayCast2D] = [
 	$RayCast2D,
 	$RayCast2D2,
@@ -12,20 +15,27 @@ extends CharacterBody2D
 	$RayCast2D6
 ]
 
+func _ready() -> void:
+	_nn_input.resize(8)
+
 
 func _physics_process(_delta: float) -> void:
-	var input: PackedFloat32Array
+	if not nn:
+		return
 	
+	var i := 0
 	for rc in raycasts:
-		input.push_back(rc.get_collision_point().distance_to(global_position) if rc.is_colliding() else 0.0)
+		var d := rc.get_collision_point().distance_to(global_position) if rc.is_colliding() else 0.0
+		_nn_input[i] = d
+		i += 1
 	
 	var rv := get_real_velocity()
-	input.push_back(rv.x)
-	input.push_back(rv.y)
+	_nn_input[i] = rv.x
+	_nn_input[i + 1] = rv.y
 	
-	nn.set_input(input)
+	nn.set_input(nn_index, _nn_input)
 	
-	var output := nn.get_output()
+	var output := nn.get_output(nn_index)
 	if output.is_empty():
 		return
 	

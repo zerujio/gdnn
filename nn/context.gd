@@ -40,7 +40,7 @@ func get_instances() -> Array[NNMultiInstance]:
 ## the compute operations.
 func submit_input() -> void:
 	for instance in _instances:
-		instance._dispatch_compute()
+		instance._submit_input()
 	rd.submit()
 
 
@@ -48,14 +48,20 @@ func submit_input() -> void:
 ## its output available.
 func sync_output() -> void:
 	rd.sync()
+	for instance in _instances:
+		instance._sync_output()
 
 
 func create_weight_uniform_set(buffer: RID) -> RID:
 	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 0)
 
 
-func create_io_uniform_set(buffer: RID) -> RID: 
+func create_input_uniform_set(buffer: RID) -> RID: 
 	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 1)
+
+
+func create_output_uniform_set(buffer: RID) -> RID:
+	return rd.uniform_set_create([_storage_buffer_uniform(buffer, 0)], _weight_shader, 2)
 
 
 func _storage_buffer_uniform(buffer: RID, binding: int) -> RDUniform:

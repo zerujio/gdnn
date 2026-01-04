@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://bo4k7g1wbe8jd"]
+[gd_scene load_steps=4 format=3 uid="uid://bo4k7g1wbe8jd"]
 
 [ext_resource type="Script" uid="uid://byqymkpfolt4w" path="res://scenes/agent.gd" id="1_yc63n"]
 [ext_resource type="Texture2D" uid="uid://cmdwm8nr73rhd" path="res://sprites/roguelikeChar_transparent.png" id="2_lug0u"]
-[ext_resource type="Script" uid="uid://clalf6stkkngd" path="res://nn/multi_instance.gd" id="3_dg1j7"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_0xm2m"]
 
@@ -35,7 +34,3 @@ rotation = 5.2359877
 texture = ExtResource("2_lug0u")
 region_enabled = true
 region_rect = Rect2(16, 102, 17, 16)
-
-[node name="NNInstance" type="Node" parent="."]
-script = ExtResource("3_dg1j7")
-metadata/_custom_type_script = "uid://clalf6stkkngd"

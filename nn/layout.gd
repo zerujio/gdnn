@@ -32,7 +32,7 @@ func remove_layer(idx: int) -> void:
 
 ## Number of layers.
 func get_layer_count() -> int:
-	assert(layer_data.size() % 3 == 0)
+	assert(layer_data.size() % 2 == 0)
 	@warning_ignore("integer_division")
 	return layer_data.size() / 2
 

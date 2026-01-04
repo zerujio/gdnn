@@ -25,5 +25,7 @@ func copy_to_buffer(layer_idx: int, param_type: Type, buffer: PackedByteArray, b
 	var size := count * 4
 	assert(buffer.size() - buffer_offset >= size)
 	
-	for i in range(buffer_offset, buffer_offset + size, 4):
+	var i := buffer_offset
+	while i < buffer_offset + size:
 		buffer.encode_float(i, randf_range(range_min, range_max))
+		i += 4
