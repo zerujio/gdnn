@@ -234,7 +234,7 @@ func _reallocate_buffers() -> void:
 	
 	var input_buf := _input_buf
 	for i in range(layout.get_layer_count()):
-		var output_size := layout.get_output_size()
+		var output_size := layout.get_layer_output_size(i)
 		var j := LayerRID.size() * i
 		
 		# input
@@ -271,5 +271,6 @@ func _update_buffer(buf: RID, idx: int, stride: int, data: PackedByteArray) -> v
 	assert(idx >= 0)
 	assert(stride >= 0)
 	assert(data.size() > 0)
+	assert(data.size() % stride == 0)
 	assert(idx * stride + data.size() <= count * stride)
 	ctx.rd.buffer_update(buf, idx * stride, data.size(), data)

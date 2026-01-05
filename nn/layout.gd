@@ -66,8 +66,12 @@ func get_layer_output_size(idx: int) -> int:
 	return 2 ** get_layer_output_log2(idx)
 
 
+func get_layer_input_log2(idx: int) -> int:
+	return get_layer_output_size(idx - 1) if idx > 0 else input_log2
+
+
 func get_layer_input_size(idx: int) -> int:
-	return get_layer_output_size(idx - 1) if idx > 0 else get_input_size()
+	return 2 ** get_layer_input_log2(idx)
 
 
 ## Returns Vector2i containing the input and output size of a layer.
