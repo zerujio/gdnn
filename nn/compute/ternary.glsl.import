@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://buh3x17qnkknx"
+path="res://.godot/imported/ternary.glsl-963e5d3ca9211389f46e7f64d2f362a6.res"
+
+[deps]
+
+source_file="res://nn/compute/ternary.glsl"
+dest_files=["res://.godot/imported/ternary.glsl-963e5d3ca9211389f46e7f64d2f362a6.res"]
+
+[params]
+
