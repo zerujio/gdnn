@@ -300,7 +300,7 @@ class ArrayBuffer:
 	
 	
 	func get_data(offset := 0, count := 0) -> PackedByteArray:
-		return _ctx.rd.buffer_get_data(_buffer, 0 * size, count * size) if _buffer else PackedByteArray()
+		return _ctx.rd.buffer_get_data(_buffer, offset * size, count * size) if _buffer else PackedByteArray()
 	
 	
 	func _create_uniform_sets() -> void:

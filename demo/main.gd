@@ -1,7 +1,7 @@
 extends Node2D
 
-const Agent := preload("res://scenes/agent.gd")
-const AGENT_SCENE := preload("res://scenes/agent.tscn")
+const Agent := preload("res://demo/pathfinding/agent.gd")
+const AGENT_SCENE := preload("res://demo/pathfinding/agent.tscn")
 
 var agents: Array[Agent]
 
