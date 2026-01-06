@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-@export var speed := 32.0
+@export var speed := 48.0
 @export var nn: NNMultiInstance
 @export var nn_index: int
 

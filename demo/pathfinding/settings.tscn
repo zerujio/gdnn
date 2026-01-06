@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3 uid="uid://g16ghyp7evjt"]
+
+[ext_resource type="Script" uid="uid://bkphli83rknib" path="res://demo/pathfinding/settings.gd" id="1_jniev"]
+[ext_resource type="PackedScene" uid="uid://dr7lot0xlv3k0" path="res://demo/speed_slider.tscn" id="2_bfx1s"]
+
+[node name="Settings" type="FoldableContainer"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 217.0
+offset_bottom = 246.0
+title = "Settings"
+script = ExtResource("1_jniev")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Generation" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Generation 0"
+
+[node name="Time" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "0.0s"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Duration" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Duration"]
+layout_mode = 2
+text = "Duration"
+
+[node name="SpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/Duration"]
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="Size" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Size"]
+layout_mode = 2
+text = "N° of agents"
+
+[node name="SpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/Size"]
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="SimulationSpeed" parent="MarginContainer/VBoxContainer" instance=ExtResource("2_bfx1s")]
+layout_mode = 2

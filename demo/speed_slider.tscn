@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://dr7lot0xlv3k0"]
+
+[sub_resource type="GDScript" id="GDScript_3nua5"]
+script/source = "extends VBoxContainer
+
+@onready var label: Label = $Label
+
+
+func _slider_value_changed(value: float) -> void:
+	assert(value > 0)
+	Engine.time_scale = value
+	label.text = \"\"
+	get_viewport().set_input_as_handled()
+"
+
+[node name="SimulationSpeed" type="VBoxContainer"]
+offset_right = 134.0
+offset_bottom = 50.0
+script = SubResource("GDScript_3nua5")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Simulation speed"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+text = "1x"
+
+[node name="HSlider" type="HSlider" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 4.0
+step = 0.25
+value = 1.0
+tick_count = 4
+ticks_on_borders = true
+
+[connection signal="value_changed" from="HBoxContainer/HSlider" to="." method="_slider_value_changed"]

@@ -3,10 +3,17 @@ extends Node2D
 const Agent := preload("res://demo/pathfinding/agent.gd")
 const AGENT_SCENE := preload("res://demo/pathfinding/agent.tscn")
 
+@export var generation_duration := 15.0
+
 var agents: Array[Agent]
+var agent_loss: PackedFloat32Array
+var generation := 0
+var generation_time := 0.0
 
 @onready var nn: NNMultiInstance = $NNMultiInstance
-@onready var spawn_point: Marker2D = $SpawnPoint
+@onready var spawn_point: Node2D = $SpawnPoint
+@onready var target: Node2D = $Target
+@onready var ui := $CanvasLayer/Settings
 
 
 func _ready() -> void:
@@ -27,10 +34,50 @@ func _ready() -> void:
 		nn.params.update_layer_weights(i, w)
 		nn.params.update_layer_bias(i, b)
 		size.x = size.y
+	
+	
+	ui.size_spinbox.value = agents.size()
+	ui.duration_spinbox.value = generation_duration
+	
+	start_generation()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	nn.submit_input()
+	
+	generation_time += delta
+	ui.set_gen_time(generation_time)
+	
+	if generation_time > generation_duration:
+		end_generation()
+		start_generation()
+
+
+func spawn_agent() -> Agent:
+	var agent: Agent = AGENT_SCENE.instantiate()
+	agent.nn = nn
+	agent.nn_index = agents.size()
+	agents.push_back(agent)
+	add_child(agent)
+	agent.process_physics_priority = process_physics_priority - 1
+	return agent
+
+
+func start_generation() -> void:
+	for a in agents:
+		a.global_position = spawn_point.global_position
+	
+	generation += 1
+	generation_time = 0.0
+	ui.set_gen(generation)
+
+
+func end_generation() -> void:
+	agent_loss.resize(agents.size())
+	for i in range(agents.size()):
+		agent_loss[i] = agents[i].global_position.distance_to(target.global_position)
+	
+	#todo: crossover
 
 
 func _random_float_fill(data: PackedByteArray, range_min := -1.0, range_max := 1.0) -> void:
@@ -40,12 +87,10 @@ func _random_float_fill(data: PackedByteArray, range_min := -1.0, range_max := 1
 		i += 4
 
 
-func spawn_agent() -> Agent:
-	var agent: Agent = AGENT_SCENE.instantiate()
-	agent.nn = nn
-	agent.nn_index = agents.size()
-	agents.push_back(agent)
-	add_child(agent)
-	agent.global_position = spawn_point.global_position
-	agent.process_physics_priority = process_physics_priority - 1
-	return agent
+func _ui_duration_changed(value: float) -> void:
+	generation_duration = value
+
+
+func _ui_gen_size_changed(value: float) -> void:
+	#todo
+	pass

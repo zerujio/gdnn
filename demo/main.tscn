@@ -1,10 +1,12 @@
-[gd_scene load_steps=13 format=4 uid="uid://c5r0ahhe11w48"]
+[gd_scene load_steps=15 format=4 uid="uid://c5r0ahhe11w48"]
 
 [ext_resource type="Script" uid="uid://dcevwtgf3mdc5" path="res://demo/main.gd" id="1_jyhfs"]
 [ext_resource type="Script" uid="uid://clalf6stkkngd" path="res://nn/multi_instance.gd" id="3_tbgi4"]
 [ext_resource type="Script" uid="uid://dll6ccxaqijsg" path="res://nn/layout.gd" id="4_tbgi4"]
 [ext_resource type="Script" uid="uid://dysc03w2enur4" path="res://nn/params.gd" id="4_tefeu"]
 [ext_resource type="TileSet" uid="uid://c13pfe6ybb6ro" path="res://demo/tileset.tres" id="6_cqq71"]
+[ext_resource type="Texture2D" uid="uid://dpmq2043e3gu8" path="res://sprites/roguelikeSheet_transparent.png" id="6_d70j4"]
+[ext_resource type="PackedScene" uid="uid://g16ghyp7evjt" path="res://demo/pathfinding/settings.tscn" id="7_d70j4"]
 
 [sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
@@ -35,18 +37,26 @@ script/source = "extends TileMapLayer
 @export var terrain_set := 0
 @export var terrain_id := 0
 
+var _placing := false
+var _removing := false
+
 
 func get_map_mouse_position() -> Vector2i:
 	return local_to_map(get_local_mouse_position())
 
 
 func _process(_delta: float) -> void:
-	if Input.is_action_pressed(\"place_object\"):
-		print(get_map_mouse_position())
+	if _placing:
 		set_cells_terrain_connect([get_map_mouse_position()], terrain_set, terrain_id)
-		print(get_cell_tile_data(get_map_mouse_position()))
-	elif Input.is_action_pressed(\"remove_object\"):
+	elif _removing:
 		set_cell(get_map_mouse_position())
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action(\"place_object\"):
+		_placing = event.is_pressed()
+	if event.is_action(\"remove_object\"):
+		_removing = event.is_pressed()
 "
 
 [node name="Main" type="Node2D"]
@@ -56,9 +66,6 @@ script = ExtResource("1_jyhfs")
 script = ExtResource("3_tbgi4")
 params = SubResource("Resource_85g3d")
 metadata/_custom_type_script = "uid://clalf6stkkngd"
-
-[node name="SpawnPoint" type="Marker2D" parent="."]
-position = Vector2(263, 171)
 
 [node name="Bounds" type="StaticBody2D" parent="."]
 
@@ -85,3 +92,30 @@ tile_map_data = PackedByteArray("AAASAAUAAAAUAAwAAAATAAUAAAAVAAwAAAAUAAUAAAAVAAw
 tile_set = ExtResource("6_cqq71")
 script = SubResource("GDScript_cqq71")
 terrain_set = 1
+
+[node name="SpawnPoint" type="Sprite2D" parent="."]
+position = Vector2(416, 144)
+texture = ExtResource("6_d70j4")
+centered = false
+region_enabled = true
+region_rect = Rect2(238, 136, 16, 16)
+
+[node name="Target" type="Sprite2D" parent="."]
+position = Vector2(64, 192)
+texture = ExtResource("6_d70j4")
+centered = false
+region_enabled = true
+region_rect = Rect2(918, 255, 16, 16)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Settings" parent="CanvasLayer" instance=ExtResource("7_d70j4")]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 205.0
+offset_bottom = 148.0
+
+[connection signal="value_changed" from="CanvasLayer/Settings/MarginContainer/VBoxContainer/Duration/SpinBox" to="." method="_ui_duration_changed"]
+[connection signal="value_changed" from="CanvasLayer/Settings/MarginContainer/VBoxContainer/Size/SpinBox" to="." method="_ui_gen_size_changed"]
+
+[editable path="CanvasLayer/Settings"]
