@@ -3,53 +3,41 @@ extends Node2D
 const Agent := preload("res://scenes/agent.gd")
 const AGENT_SCENE := preload("res://scenes/agent.tscn")
 
-## Number of agents to spawn.
-@export_range(1, 2048) var agent_count := 32
-@export var nn_params: NNRandomParams
-
 var agents: Array[Agent]
 
-@onready var nn_ctx: NNContext = $NNContext
-@onready var nn: NNMultiInstance = $NNContext/NNMultiInstance
+@onready var nn: NNMultiInstance = $NNMultiInstance
 @onready var spawn_point: Marker2D = $SpawnPoint
 
 
 func _ready() -> void:
-	nn.count = agent_count
-	for i in range(agent_count):
+	assert(nn and nn.params and nn.params.layout)
+	
+	for i in range(nn.params.count):
 		spawn_agent()
 	
 	var w: PackedByteArray
 	var b: PackedByteArray
-	var input_size := nn.layout.get_input_size()
-	for i in range(nn.layout.get_layer_count()):
-		var output_size := nn.layout.get_layer_output_size(i)
-		w.resize(input_size * output_size * agents.size() * 4)
-		b.resize(output_size * agents.size() * 4)
-		var w_offset := 0
-		var b_offset := 0
-		for a in agents:
-			nn_params.copy_to_buffer(i, NNParams.Type.WEIGHT, w, w_offset)
-			nn_params.copy_to_buffer(i, NNParams.Type.BIAS, b, b_offset)
-			w_offset += (input_size + output_size) * 4
-			b_offset += output_size * 4
-		nn.update_layer_weights(i, 0, w)
-		nn.update_layer_bias(i, 0, b)
-		input_size = output_size
-	
-	
-	# call sync at the start of each frame, skipping the first one
-	get_tree().physics_frame.connect(func():
-		get_tree().physics_frame.connect(_pre_physics_frame),
-		CONNECT_ONE_SHOT)
+	var size := Vector2i(nn.params.layout.get_input_size(), 0)
+	for i in range(nn.params.layout.get_layer_count()):
+		size.y = nn.params.layout.get_layer_output_size(i)
+		w.resize(size.x * size.y * agents.size() * 4)
+		b.resize(size.y * agents.size() * 4)
+		_random_float_fill(w)
+		_random_float_fill(b)
+		nn.params.update_layer_weights(i, w)
+		nn.params.update_layer_bias(i, b)
+		size.x = size.y
 
 
 func _physics_process(_delta: float) -> void:
-	nn_ctx.submit_input()
+	nn.submit_input()
 
 
-func _pre_physics_frame() -> void:
-	nn_ctx.sync_output()
+func _random_float_fill(data: PackedByteArray, range_min := -1.0, range_max := 1.0) -> void:
+	var i := 0
+	while i < data.size():
+		data.encode_float(i, randf_range(range_min, range_max))
+		i += 4
 
 
 func spawn_agent() -> Agent:
@@ -59,4 +47,5 @@ func spawn_agent() -> Agent:
 	agents.push_back(agent)
 	add_child(agent)
 	agent.global_position = spawn_point.global_position
+	agent.process_physics_priority = process_physics_priority - 1
 	return agent

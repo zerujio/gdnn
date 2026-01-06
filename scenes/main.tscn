@@ -1,21 +1,22 @@
-[gd_scene load_steps=11 format=3 uid="uid://c5r0ahhe11w48"]
+[gd_scene load_steps=12 format=3 uid="uid://c5r0ahhe11w48"]
 
 [ext_resource type="Script" uid="uid://dcevwtgf3mdc5" path="res://scenes/main.gd" id="1_jyhfs"]
-[ext_resource type="Script" uid="uid://cs6c18pivaf7n" path="res://nn/random_params.gd" id="3_tefeu"]
+[ext_resource type="Script" uid="uid://clalf6stkkngd" path="res://nn/multi_instance.gd" id="3_tbgi4"]
 [ext_resource type="Script" uid="uid://dll6ccxaqijsg" path="res://nn/layout.gd" id="4_tbgi4"]
+[ext_resource type="Script" uid="uid://dysc03w2enur4" path="res://nn/params.gd" id="4_tefeu"]
 [ext_resource type="PackedScene" uid="uid://fe2fqocbg7t5" path="res://scenes/obstacle.tscn" id="5_lquwl"]
 
-[sub_resource type="Resource" id="Resource_tefeu"]
+[sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
 input_log2 = 3
 layer_data = PackedByteArray(0, 2, 0, 1)
 metadata/_custom_type_script = "uid://dll6ccxaqijsg"
 
-[sub_resource type="Resource" id="Resource_o6xl0"]
-script = ExtResource("3_tefeu")
-range_min = -1.0
-layout = SubResource("Resource_tefeu")
-metadata/_custom_type_script = "uid://cs6c18pivaf7n"
+[sub_resource type="Resource" id="Resource_85g3d"]
+script = ExtResource("4_tefeu")
+layout = SubResource("Resource_tipki")
+count = 32
+metadata/_custom_type_script = "uid://dysc03w2enur4"
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
 normal = Vector2(0, 1)
@@ -29,10 +30,12 @@ normal = Vector2(1, 0)
 normal = Vector2(-1, 0)
 
 [node name="Main" type="Node2D"]
-process_physics_priority = 1
 script = ExtResource("1_jyhfs")
-agent_count = 64
-nn_params = SubResource("Resource_o6xl0")
+
+[node name="NNMultiInstance" type="Node" parent="."]
+script = ExtResource("3_tbgi4")
+params = SubResource("Resource_85g3d")
+metadata/_custom_type_script = "uid://clalf6stkkngd"
 
 [node name="SpawnPoint" type="Marker2D" parent="."]
 position = Vector2(263, 171)

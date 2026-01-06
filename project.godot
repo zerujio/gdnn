@@ -15,6 +15,10 @@ run/main_scene="uid://c5r0ahhe11w48"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GlobalNNContext="*res://nn/context.gd"
+
 [display]
 
 window/stretch/scale=2.0

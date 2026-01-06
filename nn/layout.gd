@@ -10,7 +10,7 @@ enum Activation { NONE, SIGMOID, RELU }
 
 ## Base 2 logarithm of the input size. This is ensures that the input size is
 ## always a power of 2.
-@export_range(0, NNContext.INPUT_EXP_MAX) var input_log2: int = 0
+@export_range(0, NNContext.WORK_GROUP_SIZE_LOG2) var input_log2: int = 0
 
 ## Stores the layer definitions. Each layer takes up 2 bytes, the first of which
 ## is the [enum Activation] function, and the second is the log2 of the output size.
@@ -18,7 +18,7 @@ enum Activation { NONE, SIGMOID, RELU }
 
 
 func add_layer(activation: Activation, output_size_log2: int) -> void:
-	assert(output_size_log2 >= 0 and output_size_log2 < NNContext.INPUT_EXP_MAX)
+	assert(output_size_log2 >= 0 and output_size_log2 < NNContext.WORK_GROUP_SIZE_LOG2)
 	layer_data.append(activation)
 	layer_data.append(output_size_log2)
 
@@ -49,7 +49,7 @@ func get_output_size() -> int:
 
 ## Base 2 logarithm of the number of outputs of the last layer.
 func get_output_size_log2() -> int:
-	return layer_data[-1] if not layer_data.is_empty() else get_input_size()
+	return layer_data[-1] if not layer_data.is_empty() else input_log2
 
 
 func get_layer_activation(idx: int) -> Activation:
