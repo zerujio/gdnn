@@ -13,7 +13,7 @@ var generation_time := 0.0
 @onready var nn: NNMultiInstance = $NNMultiInstance
 @onready var spawn_point: Node2D = $SpawnPoint
 @onready var target: Node2D = $Target
-@onready var ui := $CanvasLayer/Settings
+@onready var ui := $CanvasLayer/UI
 
 
 func _ready() -> void:
@@ -34,7 +34,6 @@ func _ready() -> void:
 		nn.params.update_layer_weights(i, w)
 		nn.params.update_layer_bias(i, b)
 		size.x = size.y
-	
 	
 	ui.size_spinbox.value = agents.size()
 	ui.duration_spinbox.value = generation_duration

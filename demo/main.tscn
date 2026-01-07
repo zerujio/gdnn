@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://dysc03w2enur4" path="res://nn/params.gd" id="4_tefeu"]
 [ext_resource type="TileSet" uid="uid://c13pfe6ybb6ro" path="res://demo/tileset.tres" id="6_cqq71"]
 [ext_resource type="Texture2D" uid="uid://dpmq2043e3gu8" path="res://sprites/roguelikeSheet_transparent.png" id="6_d70j4"]
-[ext_resource type="PackedScene" uid="uid://g16ghyp7evjt" path="res://demo/pathfinding/settings.tscn" id="7_d70j4"]
+[ext_resource type="PackedScene" uid="uid://bdhlddvb230jh" path="res://demo/pathfinding/ui/ui.tscn" id="7_d70j4"]
 
 [sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
@@ -109,13 +109,4 @@ region_rect = Rect2(918, 255, 16, 16)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="Settings" parent="CanvasLayer" instance=ExtResource("7_d70j4")]
-offset_left = 4.0
-offset_top = 4.0
-offset_right = 205.0
-offset_bottom = 148.0
-
-[connection signal="value_changed" from="CanvasLayer/Settings/MarginContainer/VBoxContainer/Duration/SpinBox" to="." method="_ui_duration_changed"]
-[connection signal="value_changed" from="CanvasLayer/Settings/MarginContainer/VBoxContainer/Size/SpinBox" to="." method="_ui_gen_size_changed"]
-
-[editable path="CanvasLayer/Settings"]
+[node name="UI" parent="CanvasLayer" instance=ExtResource("7_d70j4")]

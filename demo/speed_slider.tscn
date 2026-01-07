@@ -3,14 +3,13 @@
 [sub_resource type="GDScript" id="GDScript_3nua5"]
 script/source = "extends VBoxContainer
 
-@onready var label: Label = $Label
+@onready var label: Label = $HBoxContainer/Label
 
 
 func _slider_value_changed(value: float) -> void:
 	assert(value > 0)
 	Engine.time_scale = value
-	label.text = \"\"
-	get_viewport().set_input_as_handled()
+	label.text = \"%.1fx\" % value
 "
 
 [node name="SimulationSpeed" type="VBoxContainer"]
@@ -35,7 +34,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 min_value = 1.0
 max_value = 4.0
-step = 0.25
+step = 0.5
 value = 1.0
 tick_count = 4
 ticks_on_borders = true
