@@ -51,14 +51,14 @@ float op(vec2 v, float p) {
 
 void main() {
     const uint idx = gl_GlobalInvocationID.x;
-    const uint group_idx = idx >> size_log2;
-    if (group_idx > indices.length()) {
+    if (idx >= result.length()) {
         return;
     }
 
-    const uvec2 pair_idx = indices[idx >> size_log2]; // indices[idx / size]
-    const uvec2 element_idx = pair_idx << size_log2 + idx & ~(-1 << size_log2); // pair_idx * size + idx % size
-    const vec2 v = vec2(a[pair_idx.x], b[pair_idx.y]);
+    const uint group_idx = idx >> size_log2; // idx / size
+    const uvec2 pair_idx = indices[group_idx];
+    const uvec2 v_idx = (pair_idx << size_log2) + (idx & ~(-1 << size_log2)); // pair_idx * size + idx % size
+    const vec2 v = vec2(a[v_idx.x], b[v_idx.y]);
 
     result[idx] = op(v, params[idx]);
 }

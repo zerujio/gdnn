@@ -53,15 +53,9 @@ func start_generation() -> void:
 	timer.start(ui.gen_time_spinbox.value)
 	ui.set_time_left(timer.time_left)
 	
-	prints("generation", generation)
-	var s := "weight:"
-	for w in nn.params._weight_buffer(0).get_data().to_float32_array():
-		s += " %.1f" % w
-	print(s)
-	s = "bias:"
-	for b in nn.params._weight_buffer(0).get_data().to_float32_array():
-		s += " %.1f" % b
-	print(s)
+	#print("\ngeneration ", generation)
+	#print("weight: ", nn.params._weight_buffer(0).get_data().to_float32_array())
+	#print("bias: ", nn.params._bias_buffer(0).get_data().to_float32_array())
 
 
 func crossover(selection_ratio: float) -> void:
@@ -71,6 +65,8 @@ func crossover(selection_ratio: float) -> void:
 	indices.sort_custom(func(i: int, j: int): return loss[i] < loss[j])
 	indices.resize(ceili(indices.size() * selection_ratio))
 	assert(not indices.is_empty())
+	
+	print(indices)
 	
 	var pairs: PackedInt32Array
 	pairs.resize(agents.size() * 2)

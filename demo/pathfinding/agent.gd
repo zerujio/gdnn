@@ -23,6 +23,7 @@ func _physics_process(_delta: float) -> void:
 	if not nn:
 		return
 	
+	# don't need this data in the basic use case
 	#var i := 0
 	#for rc in raycasts:
 		#var d := rc.get_collision_point().distance_to(global_position) if rc.is_colliding() else 0.0

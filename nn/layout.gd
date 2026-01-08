@@ -49,15 +49,15 @@ func get_output_size() -> int:
 
 ## Base 2 logarithm of the number of outputs of the last layer.
 func get_output_size_log2() -> int:
-	return layer_data[-1] if not layer_data.is_empty() else input_log2
+	return layer_data[-2] if not layer_data.is_empty() else input_log2
 
 
 func get_layer_activation(idx: int) -> Activation:
-	return layer_data[idx * 2] as Activation
+	return layer_data[idx * 2 + 1] as Activation
 
 
 func get_layer_output_log2(idx: int) -> int:
-	var log2 := layer_data[idx * 2 + 1]
+	var log2 := layer_data[idx * 2]
 	assert(log2 > 0, "layer with output log2 = %d < 1" % log2)
 	return log2
 

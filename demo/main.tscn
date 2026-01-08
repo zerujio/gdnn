@@ -11,13 +11,13 @@
 [sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
 input_log2 = 1
-layer_data = PackedByteArray("AAE=")
+layer_data = PackedByteArray("AgIBAA==")
 metadata/_custom_type_script = "uid://dll6ccxaqijsg"
 
 [sub_resource type="Resource" id="Resource_85g3d"]
 script = ExtResource("4_tefeu")
 layout = SubResource("Resource_tipki")
-count = 8
+count = 128
 metadata/_custom_type_script = "uid://dysc03w2enur4"
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
