@@ -3,13 +3,13 @@
 [ext_resource type="PackedScene" uid="uid://dr7lot0xlv3k0" path="res://demo/speed_slider.tscn" id="2_bfx1s"]
 
 [node name="Settings" type="FoldableContainer"]
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 217.0
-offset_bottom = 246.0
+offset_right = 224.0
+offset_bottom = 32.0
+folded = true
 title = "Settings"
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
+visible = false
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
@@ -43,6 +43,7 @@ text = "N° of agents"
 [node name="SpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/Size"]
 layout_mode = 2
 size_flags_horizontal = 10
+editable = false
 
 [node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

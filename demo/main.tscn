@@ -10,14 +10,14 @@
 
 [sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
-input_log2 = 3
-layer_data = PackedByteArray("AAIAAQ==")
+input_log2 = 1
+layer_data = PackedByteArray("AAE=")
 metadata/_custom_type_script = "uid://dll6ccxaqijsg"
 
 [sub_resource type="Resource" id="Resource_85g3d"]
 script = ExtResource("4_tefeu")
 layout = SubResource("Resource_tipki")
-count = 32
+count = 8
 metadata/_custom_type_script = "uid://dysc03w2enur4"
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
@@ -62,6 +62,10 @@ func _unhandled_input(event: InputEvent) -> void:
 [node name="Main" type="Node2D"]
 script = ExtResource("1_jyhfs")
 
+[node name="Timer" type="Timer" parent="."]
+process_callback = 0
+wait_time = 10.0
+
 [node name="NNMultiInstance" type="Node" parent="."]
 script = ExtResource("3_tbgi4")
 params = SubResource("Resource_85g3d")
@@ -88,20 +92,19 @@ tile_map_data = PackedByteArray("AAAAAAAAAAAGAAAAAAABAAEAAAAIAAoAAAACAAIAAAAIAAo
 tile_set = ExtResource("6_cqq71")
 
 [node name="WallLayer" type="TileMapLayer" parent="."]
-tile_map_data = PackedByteArray("AAASAAUAAAAUAAwAAAATAAUAAAAVAAwAAAAUAAUAAAAVAAwAAAAVAAUAAAAVAAwAAAAWAAUAAAAVAAwAAAAXAAUAAAAWAAwAAAAgAAoAAAAUAA0AAAAgAAsAAAAWAA0AAAAgAAwAAAAYAA0AAAAfAAwAAAAVAAwAAAAeAAwAAAAUAAwAAAACAAIAAAAXAAwAAAACAAMAAAAWAA0AAAACAAQAAAAWAA0AAAACAAUAAAAXAA0AAAADAAIAAAAVAAwAAAAEAAIAAAAVAAwAAAAFAAIAAAAVAAwAAAAGAAIAAAAWAAwAAAADAAUAAAAVAAwAAAAEAAUAAAAVAAwAAAAFAAUAAAAVAAwAAAAGAAUAAAAWAAwAAAABABMAAAAUAAwAAAACABMAAAAVAAwAAAADABMAAAAVAAwAAAAEABMAAAAVAAwAAAAFABMAAAAWAAwAAAAeAAIAAAAUAA0AAAAeAAMAAAAWAA0AAAAeAAQAAAAXAA0AAAAfAAQAAAAVAAwAAAAgAAQAAAAWAAwAAAAOAAwAAAAWAAwAAAAOAAkAAAAUAA4AAAAOAAgAAAAYAAwAAAANAAwAAAAVAAwAAAANAAgAAAAVAAwAAAAMAAwAAAAVAAwAAAAMAAgAAAAVAAwAAAALAAwAAAAVAAwAAAALAAgAAAAVAAwAAAAKAAwAAAAXAA0AAAAKAAsAAAAWAA0AAAAKAAoAAAAWAA0AAAAKAAkAAAAWAA0AAAAKAAgAAAAXAAwAAAAWAAoAAAAUAA4AAAAWAAkAAAAWAA0AAAAWAAgAAAAYAAwAAAAVAAgAAAAVAAwAAAAUAAgAAAAVAAwAAAATAAoAAAAUAA4AAAATAAkAAAAWAA0AAAATAAgAAAAXAAwAAAAaAA8AAAAWAAwAAAAZAA8AAAAVAAwAAAAYAA8AAAAVAAwAAAAXAA8AAAAVAAwAAAAWAA8AAAAVAAwAAAAVAA8AAAAVAAwAAAAUAA8AAAAVAAwAAAATAA8AAAAUAAwAAAAJABMAAAAXAA0AAAAVABIAAAAWAAwAAAAUABIAAAAVAAwAAAATABIAAAAUAAwAAAAKABMAAAAVAAwAAAALABMAAAAWAAwAAAAJABEAAAAaAA0AAAAKABEAAAAWAAwAAAAIABEAAAAUAAwAAAAJABIAAAAWAA0AAAA=")
 tile_set = ExtResource("6_cqq71")
 script = SubResource("GDScript_cqq71")
 terrain_set = 1
 
 [node name="SpawnPoint" type="Sprite2D" parent="."]
-position = Vector2(416, 144)
+position = Vector2(480, 64)
 texture = ExtResource("6_d70j4")
 centered = false
 region_enabled = true
 region_rect = Rect2(238, 136, 16, 16)
 
 [node name="Target" type="Sprite2D" parent="."]
-position = Vector2(64, 192)
+position = Vector2(80, 240)
 texture = ExtResource("6_d70j4")
 centered = false
 region_enabled = true
@@ -110,3 +113,5 @@ region_rect = Rect2(918, 255, 16, 16)
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="UI" parent="CanvasLayer" instance=ExtResource("7_d70j4")]
+
+[connection signal="timeout" from="Timer" to="." method="on_timeout"]

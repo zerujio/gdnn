@@ -11,14 +11,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_l1khk")
 
 [node name="Settings" parent="." instance=ExtResource("1_mojp0")]
 layout_mode = 0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 209.0
-offset_bottom = 238.0
+offset_right = 88.0
+offset_bottom = 31.0
 
 [node name="Status" parent="." instance=ExtResource("2_l1khk")]
 layout_mode = 1

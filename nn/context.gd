@@ -13,7 +13,12 @@ const WORK_GROUP_SIZE := 2 ** WORK_GROUP_SIZE_LOG2
 
 const WEIGHT_SRC: RDShaderFile = preload("res://nn/compute/weight.glsl")
 const UNARY_SRC: RDShaderFile = preload("res://nn/compute/activation.glsl")
+const BINARY_SRC: RDShaderFile = preload("res://nn/compute/binary.glsl")
 const TERNARY_SRC: RDShaderFile = preload("res://nn/compute/ternary.glsl")
+const TERNARY_IDX_SRC: RDShaderFile = preload("res://nn/compute/crossover.glsl")
+
+# compute_list_begin() always returns this value now (due to the introduction of the command graph)
+const _CL := 4
 
 ## If enabled, the runtime will dispatch compute workloads during [method _physics_process].
 ## Otherwise, it will dispatch them during [method _process].
@@ -29,8 +34,15 @@ var _weight_pipeline: RID = rd.compute_pipeline_create(_weight_shader)
 var _unary_shader: RID = rd.shader_create_from_spirv(UNARY_SRC.get_spirv(), "unary")
 var _unary_pipeline: Array[RID]
 
+var _binary_shader: RID = rd.shader_create_from_spirv(BINARY_SRC.get_spirv(), "binary")
+var _binary_pipeline: RID = rd.compute_pipeline_create(_binary_shader)
+
 var _ternary_shader: RID = rd.shader_create_from_spirv(UNARY_SRC.get_spirv(), "ternary")
-var _ternary_pipeline: RID
+var _ternary_pipeline: RID = rd.compute_pipeline_create(_ternary_shader)
+
+var _ternary_idx_shader: RID = rd.shader_create_from_spirv(TERNARY_IDX_SRC.get_spirv(), 
+	"ternary_idx")
+var _ternary_idx_pipeline := rd.compute_pipeline_create(_ternary_idx_shader)
 
 
 func _init() -> void:
@@ -40,13 +52,10 @@ func _init() -> void:
 	
 	var spec_const := RDPipelineSpecializationConstant.new()
 	
-	_unary_pipeline.resize(NNLayout.Activation.size())
-	for i in range(1, NNLayout.Activation.size()):
-		spec_const.value = i - 1
+	_unary_pipeline.resize(2)
+	for i in range(_unary_pipeline.size()):
+		spec_const.value = i
 		_unary_pipeline[i] = rd.compute_pipeline_create(_unary_shader, [spec_const])
-	
-	spec_const.value = 0
-	_ternary_pipeline = rd.compute_pipeline_create(_ternary_shader, [spec_const])
 
 
 func _ready() -> void:
@@ -114,14 +123,19 @@ func matrix_vector_multiply_add(in_matrix: ArrayBuffer, matrix_size_log2: Vector
 	pc.encode_u32(0, matrix_size_log2.x)
 	pc.encode_u32(4, matrix_size_log2.y)
 	
-	var cl := rd.compute_list_begin()
-	rd.compute_list_bind_compute_pipeline(cl, _weight_pipeline)
-	rd.compute_list_set_push_constant(cl, pc, pc.size())
-	rd.compute_list_bind_uniform_set(cl, in_matrix._read_uniform_set, 0)
-	rd.compute_list_bind_uniform_set(cl, in_vector._read_uniform_set, 1)
-	rd.compute_list_bind_uniform_set(cl, out_vector._write_uniform_set, 2)
-	rd.compute_list_dispatch(cl, ceili(in_matrix.size / float(WORK_GROUP_SIZE)), 1, 1)
-	rd.compute_list_end()
+	_cl_begin()
+	_cl_bind_pipeline(_weight_pipeline)
+	_cl_set_push_constant(pc)
+	_cl_bind_uniform_set(in_matrix._read_uniform_set, 0)
+	_cl_bind_uniform_set(in_vector._read_uniform_set, 1)
+	_cl_bind_uniform_set(out_vector._write_uniform_set, 2)
+	_cl_dispatch(ceili(in_matrix.size / float(WORK_GROUP_SIZE)), 1, 1)
+	_cl_end()
+
+
+## Writes per-element sum of [param a] and [param b] to [param result].
+func add(a: ArrayBuffer, b: ArrayBuffer, result: ArrayBuffer) -> void:
+	_binary(a, b, result, _binary_pipeline)
 
 
 ## Performs element-wise interpolation (lerp) between [param x] and [param y] by factor [param a],
@@ -132,14 +146,36 @@ func interpolate(x: ArrayBuffer, y: ArrayBuffer, a: ArrayBuffer, result: ArrayBu
 	assert(y.size == size)
 	assert(a.size == size)
 	
-	var cl := rd.compute_list_begin() 
-	rd.compute_list_bind_compute_pipeline(cl, _ternary_pipeline)
-	rd.compute_list_bind_uniform_set(cl, x._read_uniform_set, 0)
-	rd.compute_list_bind_uniform_set(cl, y._read_uniform_set, 1)
-	rd.compute_list_bind_uniform_set(cl, a._read_uniform_set, 2)
-	rd.compute_list_bind_uniform_set(cl, result._write_uniform_set, 3)
-	rd.compute_list_dispatch(cl, ceil(float(size) / WORK_GROUP_SIZE), 1, 1)
-	rd.compute_list_end()
+	_cl_begin() 
+	_cl_bind_pipeline(_ternary_pipeline)
+	_cl_bind_uniform_set(x._read_uniform_set, 0)
+	_cl_bind_uniform_set(y._read_uniform_set, 1)
+	_cl_bind_uniform_set(a._read_uniform_set, 2)
+	_cl_bind_uniform_set(result._write_uniform_set, 3)
+	_cl_dispatch(ceili(float(size) / WORK_GROUP_SIZE), 1, 1)
+	_cl_end()
+
+
+func interpolate_indexed(x: ArrayBuffer, y: ArrayBuffer, a: ArrayBuffer,
+		index: ArrayBuffer, index_divisor_log2: int, result: ArrayBuffer) -> void:
+	assert(x and y and a and index and result)
+	assert(index_divisor_log2 >= 0)
+	
+	var pc: PackedByteArray
+	pc.resize(16)
+	pc.encode_u32(0, index_divisor_log2)
+	
+	_cl_begin()
+	_cl_bind_pipeline(_ternary_idx_pipeline)
+	_cl_set_push_constant(pc)
+	_cl_bind_uniform_sets([
+		x._read_uniform_set, 
+		y._read_uniform_set, 
+		a._read_uniform_set, 
+		index._read_uniform_set,
+		result._write_uniform_set])
+	_cl_dispatch(ceili(float(index.size << index_divisor_log2) / WORK_GROUP_SIZE))
+	_cl_end()
 
 
 func sigmoid(src: ArrayBuffer, dst: ArrayBuffer) -> void:
@@ -152,11 +188,53 @@ func relu(src: ArrayBuffer, dst: ArrayBuffer) -> void:
 
 func _unary(src: ArrayBuffer, dst: ArrayBuffer, idx: int) -> void:
 	assert(src.size == dst.size)
-	var cl := rd.compute_list_begin() 
-	rd.compute_list_bind_compute_pipeline(cl, _unary_pipeline[idx])
-	rd.compute_list_bind_uniform_set(cl, src._read_uniform_set, 0)
-	rd.compute_list_bind_uniform_set(cl, dst._read_uniform_set, 1)
-	rd.compute_list_dispatch(cl, ceil(float(src.size) / WORK_GROUP_SIZE), 1, 1)
+	_cl_begin()
+	_cl_bind_pipeline(_unary_pipeline[idx])
+	_cl_bind_uniform_set(src._read_uniform_set, 0)
+	_cl_bind_uniform_set(dst._write_uniform_set, 1)
+	_cl_dispatch(ceili(float(src.size) / WORK_GROUP_SIZE), 1, 1)
+	_cl_end()
+
+
+func _binary(a: ArrayBuffer, b: ArrayBuffer, result: ArrayBuffer, pipeline: RID) -> void:
+	assert(a and b and result)
+	assert(a.size == result.size)
+	assert(a.size == result.size)
+	assert(pipeline)
+	_cl_begin()
+	_cl_bind_pipeline(pipeline)
+	_cl_bind_uniform_sets([a._read_uniform_set, b._read_uniform_set, result._write_uniform_set])
+	_cl_dispatch(ceili(float(result.size) / WORK_GROUP_SIZE))
+	_cl_end()
+
+
+func _cl_begin() -> void:
+	var cl := rd.compute_list_begin()
+	assert(cl == _CL)
+
+
+func _cl_bind_pipeline(pipeline: RID) -> void:
+	rd.compute_list_bind_compute_pipeline(_CL, pipeline)
+
+
+func _cl_set_push_constant(data: PackedByteArray) -> void:
+	rd.compute_list_set_push_constant(_CL, data, data.size())
+
+
+func _cl_bind_uniform_set(uniform_set: RID, set_index: int) -> void:
+	rd.compute_list_bind_uniform_set(_CL, uniform_set, set_index)
+
+
+func _cl_bind_uniform_sets(uniform_sets: Array[RID], set_index := 0) -> void:
+	for i in range(uniform_sets.size()):
+		_cl_bind_uniform_set(uniform_sets[i], set_index + i)
+
+
+func _cl_dispatch(x_groups: int, y_groups := 1, z_groups := 1) -> void:
+	rd.compute_list_dispatch(_CL, x_groups, y_groups, z_groups)
+
+
+func _cl_end() -> void:
 	rd.compute_list_end()
 
 
@@ -189,6 +267,7 @@ class ArrayBuffer:
 	## Allocates a new buffer, discarding any existing data.
 	func allocate(new_size: int, data := PackedByteArray()) -> void:
 		assert(data.size() % FLOAT_SIZE == 0)
+		assert(data.is_empty() or new_size * FLOAT_SIZE == data.size())
 		if _buffer:
 			_ctx.rd.free_rid(_buffer)
 		_buffer = _ctx.rd.storage_buffer_create(new_size * FLOAT_SIZE, data) if new_size > 0 else RID()
@@ -250,9 +329,10 @@ class ArrayBuffer:
 		return _ctx.rd.buffer_update(_buffer, offset * matrix_size.x * matrix_size.y, data.size(), data)
 	
 	
-	func clear(offset: int, count: int) -> Error:
+	func clear(offset := 0, count := 0) -> Error:
 		assert(offset >= 0)
-		assert(count > 0)
+		assert(count >= 0)
+		count = count if count != 0 else size - offset
 		return _ctx.rd.buffer_clear(_buffer, offset * FLOAT_SIZE, count * FLOAT_SIZE)
 	
 	
@@ -272,11 +352,20 @@ class ArrayBuffer:
 		return src._ctx.rd.buffer_copy(src._buffer, dst._buffer, src_offset * FLOAT_SIZE, dst_offset * FLOAT_SIZE, count * FLOAT_SIZE)
 	
 	
+	func copy_to(dst: ArrayBuffer, src_offset := 0, dst_offset := 0, count := 1) -> Error:
+		return copy(self, dst, src_offset, dst_offset, count)
+	
+	
 	static func copy_vector(src: ArrayBuffer, dst: ArrayBuffer,
 			src_offset: int, dst_offset: int,
 			count: int, vector_size: int) -> Error:
 		assert(vector_size > 0)
 		return copy(src, dst, src_offset * vector_size, dst_offset * vector_size, count * vector_size)
+	
+	
+	func copy_vector_to(dst: ArrayBuffer, src_offset: int, dst_offset: int, 
+			count: int, vector_size: int) -> Error:
+		return copy_vector(self, dst, src_offset, dst_offset, count, vector_size)
 	
 	
 	static func copy_matrix(src: ArrayBuffer, dst: ArrayBuffer,
@@ -285,6 +374,11 @@ class ArrayBuffer:
 		assert(matrix_size.y > 0)
 		return copy_vector(src, dst, src_offset * matrix_size.y, dst_offset * matrix_size.y, 
 			count * matrix_size.y, matrix_size.x)
+	
+	
+	func copy_matrix_to(dst: ArrayBuffer, src_offset: int, dst_offset: int, 
+			count: int, matrix_size: Vector2i) -> Error:
+		return copy_matrix(self, dst, src_offset, dst_offset, count, matrix_size)
 	
 	
 	func get_data_async(callback: Callable, offset := 0, count := 0) -> Error: 

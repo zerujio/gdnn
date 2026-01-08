@@ -3,52 +3,62 @@
 
 layout(local_size_x = 64) in;
 
-const uint TYPE_INTERMEDIATE = 0;
+const uint OP_LERP = 0;
 
-// crossover function type
 layout(constant_id = 0)
-const uint TYPE = 0;
+const uint op_index = 0;
 
-struct Crossover {
-    // parent indices
-    uvec2 parent_id;
-    // crossover parameters
-    uvec2 param;
+layout(push_constant)
+uniform PushConsant {
+    uint size_log2;
 };
 
 layout(std430, set = 0, binding = 0)
-restrict readonly buffer ParentBuffer {
-    float parents[];
+readonly buffer A {
+    float a[];
 };
 
 layout(std430, set = 1, binding = 0)
-restrict writeonly buffer ChildBuffer {
-    float children[];
+readonly buffer B {
+    float b[];
 };
 
 layout(std430, set = 2, binding = 0)
-restrict readonly buffer CrossoverBuffer {
-    Crossover crossovers[];
+restrict readonly buffer Param {
+    float params[];
 };
 
-float intermediate_crossover(vec2 parent, float b) {
-    return parent.x * b + parent.y * (1.0 - b);
+layout(std430, set = 3, binding = 0)
+restrict readonly buffer Index {
+    uvec2 indices[];
+};
+
+layout(std430, set = 4, binding = 0)
+restrict writeonly buffer Result {
+    float result[];
+};
+
+float lerp(float x, float y, float a) {
+    return x * a + y * (1.0 - a);
+}
+
+float op(vec2 v, float p) {
+    switch (op_index) {
+        case OP_LERP:
+        return lerp(v.x, v.y, p);
+    }
 }
 
 void main() {
-    const uint i = gl_GlobalInvocationID.x;
-    const Crossover cross = crossovers[i];
-    const vec2 parent = {
-            parents[cross.parent_id.x],
-            parents[cross.parent_id.y]
-        };
-
-    float child;
-    switch (TYPE) {
-        case TYPE_INTERMEDIATE:
-        child = intermediate_crossover(parent, uintBitsToFloat(cross.param.x));
-        break;
+    const uint idx = gl_GlobalInvocationID.x;
+    const uint group_idx = idx >> size_log2;
+    if (group_idx > indices.length()) {
+        return;
     }
 
-    children[i] = child;
+    const uvec2 pair_idx = indices[idx >> size_log2]; // indices[idx / size]
+    const uvec2 element_idx = pair_idx << size_log2 + idx & ~(-1 << size_log2); // pair_idx * size + idx % size
+    const vec2 v = vec2(a[pair_idx.x], b[pair_idx.y]);
+
+    result[idx] = op(v, params[idx]);
 }
