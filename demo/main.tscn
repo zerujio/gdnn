@@ -11,13 +11,13 @@
 [sub_resource type="Resource" id="Resource_tipki"]
 script = ExtResource("4_tbgi4")
 input_log2 = 1
-layer_data = PackedByteArray("AgIBAA==")
+layer_data = PackedByteArray("AQA=")
 metadata/_custom_type_script = "uid://dll6ccxaqijsg"
 
 [sub_resource type="Resource" id="Resource_85g3d"]
 script = ExtResource("4_tefeu")
 layout = SubResource("Resource_tipki")
-count = 128
+count = 256
 metadata/_custom_type_script = "uid://dysc03w2enur4"
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tbgi4"]
@@ -73,17 +73,17 @@ metadata/_custom_type_script = "uid://clalf6stkkngd"
 
 [node name="Bounds" type="StaticBody2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Bounds"]
+[node name="YMin" type="CollisionShape2D" parent="Bounds"]
 shape = SubResource("WorldBoundaryShape2D_tbgi4")
 
-[node name="CollisionShape2D2" type="CollisionShape2D" parent="Bounds"]
+[node name="YMax" type="CollisionShape2D" parent="Bounds"]
 position = Vector2(0, 324)
 shape = SubResource("WorldBoundaryShape2D_tefeu")
 
-[node name="CollisionShape2D3" type="CollisionShape2D" parent="Bounds"]
+[node name="XMin" type="CollisionShape2D" parent="Bounds"]
 shape = SubResource("WorldBoundaryShape2D_o6xl0")
 
-[node name="CollisionShape2D4" type="CollisionShape2D" parent="Bounds"]
+[node name="XMax" type="CollisionShape2D" parent="Bounds"]
 position = Vector2(576, 0)
 shape = SubResource("WorldBoundaryShape2D_tipki")
 

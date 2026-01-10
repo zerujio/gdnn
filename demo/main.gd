@@ -6,6 +6,7 @@ const AGENT_SCENE := preload("res://demo/pathfinding/agent.tscn")
 
 var agents: Array[Agent]
 var generation := 0
+var bounds: Vector2
 
 @onready var timer: Timer = $Timer
 @onready var nn: NNMultiInstance = $NNMultiInstance
@@ -18,6 +19,9 @@ func _ready() -> void:
 	assert(nn and nn.params and nn.params.layout)
 	
 	nn.params.randomize_params()
+	
+	bounds.x = $Bounds/XMax.global_position.x - $Bounds/XMin.global_position.x
+	bounds.y = $Bounds/YMax.global_position.y - $Bounds/YMin.global_position.y
 	
 	for i in range(nn.params.count):
 		spawn_agent()
@@ -38,6 +42,7 @@ func spawn_agent() -> Agent:
 	var agent: Agent = AGENT_SCENE.instantiate()
 	agent.nn = nn
 	agent.nn_index = agents.size()
+	agent.input_scale = Vector2.ONE / bounds
 	agents.push_back(agent)
 	add_child(agent)
 	agent.process_physics_priority = process_physics_priority - 1
@@ -52,10 +57,6 @@ func start_generation() -> void:
 	
 	timer.start(ui.gen_time_spinbox.value)
 	ui.set_time_left(timer.time_left)
-	
-	#print("\ngeneration ", generation)
-	#print("weight: ", nn.params._weight_buffer(0).get_data().to_float32_array())
-	#print("bias: ", nn.params._bias_buffer(0).get_data().to_float32_array())
 
 
 func crossover(selection_ratio: float) -> void:
@@ -66,13 +67,11 @@ func crossover(selection_ratio: float) -> void:
 	indices.resize(ceili(indices.size() * selection_ratio))
 	assert(not indices.is_empty())
 	
-	print(indices)
-	
 	var pairs: PackedInt32Array
 	pairs.resize(agents.size() * 2)
 	for i in range(0, pairs.size(), 2):
-		pairs[0] = indices.pick_random()
-		pairs[1] = indices.pick_random()
+		pairs[i] = indices.pick_random()
+		pairs[i + 1] = indices.pick_random()
 	
 	nn.params = nn.params.intermediate_crossover(pairs)
 

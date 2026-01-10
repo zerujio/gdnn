@@ -95,18 +95,28 @@ func intermediate_crossover(pairs: PackedInt32Array, d := 0.25) -> NNParams:
 		size_log2.y = layout.get_layer_output_log2(i)
 		var size := Vector2i(2 ** size_log2.x, 2 ** size_log2.y)
 		
-		# interpolate weights, then biases
-		for j in range(2):
-			var old := _buffers[2 * i + j]
-			var new := new_params._buffers[2 * i + j]
-			
-			a.resize(new.size_bytes())
-			for k in range(0, a.size(), 4):
-				# random interpolation weight in range [-d, 1 + d]
-				a.encode_float(k, randf_range(-d, 1.0 + d))
-			var a_buf := _ctx.create_array_buffer(new.size, a)
-			
-			_ctx.interpolate_indexed(old, old, a_buf, pair_buf, size_log2.x * size_log2.y, new)
+		# interpolate weights
+		var old := _weight_buffer(i)
+		var new := new_params._weight_buffer(i)
+		
+		a.resize(new.size_bytes())
+		for k in range(0, a.size(), 4):
+			# random interpolation weight in range [-d, 1 + d]
+			a.encode_float(k, randf_range(-d, 1.0 + d))
+		var a_buf := _ctx.create_array_buffer(new.size, a)
+		
+		_ctx.interpolate_indexed(old, old, a_buf, pair_buf, size_log2.x + size_log2.y, new)
+		
+		# interpolate biases
+		old = _bias_buffer(i)
+		new = new_params._bias_buffer(i)
+		
+		a.resize(new.size_bytes())
+		for k in range(0, a.size(), 4):
+			a.encode_float(k, randf_range(-d, 1.0 + d))
+		a_buf = _ctx.create_array_buffer(new.size, a)
+		
+		_ctx.interpolate_indexed(old, old, a_buf, pair_buf, size_log2.y, new)
 		
 		size_log2.x = size_log2.y
 	
@@ -119,10 +129,10 @@ func randomize_params(range_min := -1.0, range_max := 1.0) -> void:
 		randomize_layer_params(i, range_min, range_max)
 
 
-func randomize_layer_params(layer_idx: int, range_min := -1.0, range_max := 1.0) -> void:
+func randomize_layer_params(layer_idx: int, range_min := 0.0, range_max := 1.0) -> void:
 	var r: PackedByteArray
 	for i in range(2):
-		var buf := _buffers[layer_idx + i]
+		var buf := _buffers[2 * layer_idx + i]
 		r.resize(buf.size_bytes())
 		for j in range(0, r.size(), 4):
 			r.encode_float(j, randf_range(range_min, range_max))

@@ -3,6 +3,7 @@ extends CharacterBody2D
 @export var speed := 48.0
 @export var nn: NNMultiInstance
 @export var nn_index: int
+@export var input_scale := Vector2.ONE
 
 var _nn_input: PackedFloat32Array
 
@@ -15,8 +16,10 @@ var _nn_input: PackedFloat32Array
 	$RayCast2D6
 ]
 
+
 func _ready() -> void:
 	_nn_input.resize(2)
+	$Label.text = str(nn_index)
 
 
 func _physics_process(_delta: float) -> void:
@@ -31,8 +34,8 @@ func _physics_process(_delta: float) -> void:
 		#i += 1
 	
 	var p := global_position
-	_nn_input[0] = p.x
-	_nn_input[1] = p.y
+	_nn_input[0] = p.x * input_scale.x
+	_nn_input[1] = p.y * input_scale.y
 	
 	nn.set_input(nn_index, _nn_input)
 	
@@ -40,7 +43,7 @@ func _physics_process(_delta: float) -> void:
 	if output.is_empty():
 		return
 	
-	var dir := (Vector2(output[0], output[1]).normalized()) * Vector2(2.0, 2.0) - Vector2.ONE
+	var dir := (Vector2(output[0], output[1]).normalized())
 	velocity = dir * speed
 	
 	move_and_slide()

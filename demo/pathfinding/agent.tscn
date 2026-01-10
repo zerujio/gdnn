@@ -35,3 +35,16 @@ rotation = 5.2359877
 texture = ExtResource("2_lug0u")
 region_enabled = true
 region_rect = Rect2(16, 102, 17, 16)
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -18.0
+offset_right = 11.0
+offset_bottom = -1.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "0"
+vertical_alignment = 2
